@@ -76,6 +76,10 @@
       border-radius: 8px;
       font-weight: 800;
       transition: transform 0.15s ease;
+      cursor: pointer;
+      display: inline-block;
+      position: relative;
+      z-index: 5;
     }
 
     .btn:hover { transform: scale(1.05); }
@@ -139,6 +143,7 @@
       -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
       -webkit-mask-composite: xor;
       mask-composite: exclude;
+      pointer-events: none; /* PERMITE CLICKS EN BOTONES */
     }
 
     .gacha-title {
@@ -204,58 +209,96 @@
     }
   </style>
   <script>
-    // --- CARRITO SIMPLE ---
-    let cart = [];
+  // --- CARRITO FUNCIONAL ---
+  let cart = JSON.parse(localStorage.getItem('pokeland_cart') || '{}');
 
-    function addToCart(name, price) {
-      // Redirección directa a PayPal por compra individual
-      const notes = prompt('Correo PayPal que usarás para pagar (debe coincidir en PayPal):');
-      if (!notes) return;
-      const desc = encodeURIComponent(name + ' | Correo PayPal comprador: ' + notes);
-      window.location.href = `https://www.paypal.com/cgi-bin/webscr?cmd=_xclick&business=alequisde@gmail.com&item_name=${desc}&amount=${price}&currency_code=USD`;
+  function addToCart(name, price) {
+    if (!cart[name]) {
+      cart[name] = { name, price, qty: 1 };
+    } else {
+      cart[name].qty += 1;
+    }
+    renderCart();
+  }
+
+  function removeFromCart(name) {
+    if (!cart[name]) return;
+    cart[name].qty -= 1;
+    if (cart[name].qty <= 0) delete cart[name];
+    renderCart();
+  }
+
+  function renderCart() {
+    const cartList = document.getElementById('cart-items');
+    const totalEl = document.getElementById('cart-total');
+    cartList.innerHTML = '';
+    let total = 0;
+
+    Object.values(cart).forEach(item => {
+      const subtotal = item.price * item.qty;
+      total += subtotal;
+      const li = document.createElement('li');
+      li.style.marginBottom = '6px';
+      li.innerHTML = `${item.name} ×${item.qty} — $${subtotal.toFixed(2)} <button onclick="removeFromCart('${item.name}')" style="margin-left:6px;background:#a33;color:#fff;border:none;border-radius:4px;padding:2px 6px;cursor:pointer">✕</button>`;
+      cartList.appendChild(li);
     });
-      renderCart();
+
+    totalEl.textContent = total.toFixed(2);
+    localStorage.setItem('pokeland_cart', JSON.stringify(cart));
+  }
+
+  function openCart() {
+    renderCart();
+    document.getElementById('cart-modal').style.display = 'flex';
+  }
+
+  function closeCart() {
+    document.getElementById('cart-modal').style.display = 'none';
+  }
+
+  function checkout() {
+    if (Object.keys(cart).length === 0) {
+      alert('El carrito está vacío');
+      return;
     }
 
-    function renderCart() {
-      const cartEl = document.getElementById('cart-items');
-      const totalEl = document.getElementById('cart-total');
-      cartEl.innerHTML = '';
-      let total = 0;
-      cart.forEach((item, index) => {
-        total += item.price;
-        cartEl.innerHTML += `<li style="margin-bottom:6px">${item.name} - $${item.price} <button onclick=\"removeItem(${index})\" style=\"margin-left:8px;background:#a33;color:#fff;border:none;border-radius:4px;padding:2px 6px;cursor:pointer\">✕</button></li>`;
-      });
-      totalEl.textContent = total.toFixed(2);
-    }
+    const notes = document.getElementById('cart-notes').value || 'Sin notas';
+    const description = encodeURIComponent(
+      Object.values(cart).map(i => `${i.name} x${i.qty}`).join(', ') + ' | Notas: ' + notes
+    );
 
-    function removeItem(index) {
-      cart.splice(index, 1);
-      renderCart();
-    } - $${item.price}</li>`;
-      });
-      totalEl.textContent = total.toFixed(2);
-    }
+    const total = Object.values(cart).reduce((s, i) => s + i.price * i.qty, 0);
 
-    function checkout() {
-      const total = cart.reduce((s, i) => s + i.price, 0);
-      if (total === 0) return alert('El carrito está vacío');
-      const notes = document.getElementById('cart-notes').value || 'Sin notas';
-      const desc = encodeURIComponent(cart.map(i => i.name).join(', ') + ' | Notas: ' + notes);
-      window.location.href = `https://www.paypal.com/cgi-bin/webscr?cmd=_xclick&business=alequisde@gmail.com&item_name=Compra+POKELAND&amount=${total}&currency_code=USD&note=${desc}`;
-    }
-      if (total === 0) return alert('El carrito está vacío');
-      window.location.href = `https://www.paypal.com/paypalme/POKELAND/${total}`;
-    }
-  </script>
+    window.location.href = `https://www.paypal.com/paypalme/alequisde/` + total.toFixed(2);
+  }
+</script>
 </head>
 <body>
 
-  <div id="cart" style="position:fixed;top:90px;right:20px;background:#141218;border:2px solid #f2b233;padding:15px;border-radius:12px;z-index:99;width:240px">
-  <h3 style="color:#f2b233;margin-bottom:6px">🛒 Carrito</h3><p style="font-size:12px;opacity:0.85;margin-bottom:8px">Pagos enviados a:<br><b>alequisde@gmail.com</b></p>
-  <ul id="cart-items" style="font-size:14px;list-style:none;margin-bottom:10px"></ul>
-  <strong>Total: $<span id="cart-total">0</span></strong><br><br>
-  <textarea id="cart-notes" placeholder="Nombre en Minecraft / Notas" style="width:100%;margin-bottom:8px;border-radius:6px;padding:6px"></textarea><p style="font-size:12px;opacity:0.85;margin-bottom:6px">Al pagar, usa este correo en PayPal:</p><p style="font-size:13px;font-weight:700;margin-bottom:6px">alequisde@gmail.com</p><button class="btn" onclick="checkout()">Pagar con PayPal</button>
+  <!-- BOTÓN FLOTANTE CARRITO -->
+<div id="open-cart" onclick="openCart()" style="position:fixed;bottom:25px;right:25px;background:linear-gradient(135deg,#f2b233,#f05a23);color:#1b1b1b;padding:14px 20px;border-radius:999px;font-weight:900;cursor:pointer;z-index:999;box-shadow:0 10px 25px rgba(0,0,0,0.4)">
+  🛒 Ver carrito
+</div>
+
+<!-- MODAL CARRITO ESTILO STEAM -->
+<div id="cart-modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.75);z-index:1000;align-items:center;justify-content:center">
+  <div style="background:#141218;border:2px solid #f2b233;width:100%;max-width:700px;border-radius:16px;padding:30px;max-height:85vh;overflow-y:auto">
+    <h2 class="section-title" style="margin-bottom:10px">🛒 Carrito de Compras</h2>
+    <p class="section-subtitle">Revisa todo antes de pagar</p>
+
+    <p style="font-size:13px;opacity:0.85;margin-bottom:12px">Pagos enviados a PayPal:<br><b>alequisde@gmail.com</b></p>
+
+    <ul id="cart-items" style="font-size:15px;list-style:none;margin-bottom:20px"></ul>
+
+    <div style="font-size:20px;font-weight:900;margin-bottom:20px">Total: $<span id="cart-total">0.00</span></div>
+
+    <textarea id="cart-notes" placeholder="Nombre en Minecraft / Notas" style="width:100%;margin-bottom:20px;border-radius:8px;padding:12px"></textarea>
+
+    <div style="display:flex;gap:12px">
+      <button class="btn" style="flex:1" onclick="checkout()">Pagar con PayPal</button>
+      <button class="btn" style="flex:1;background:#333;color:#fff" onclick="closeCart()">Seguir comprando</button>
+    </div>
+  </div>
 </div>
 
 <header>
@@ -302,20 +345,20 @@
       <p class="section-subtitle">14 ranuras · 9% Pokémon normales · 7% Legendario</p>
 
       <div class="grid">
-        <div class="gacha-card"><div class="gacha-title">Paradox 1</div><div class="rates"><span>Legendario: 7%</span><span>Normal: 93%</span></div><div class="price">$1</div><a class="btn" onclick="addToCart('Gacha', 1)">Comprar</a></div>
-        <div class="gacha-card"><div class="gacha-title">Paradox 2</div><div class="rates"><span>Legendario: 7%</span><span>Normal: 93%</span></div><div class="price">$1</div><a class="btn" onclick="addToCart('Gacha', 1)">Comprar</a></div>
-        <div class="gacha-card"><div class="gacha-title">Paradox 3</div><div class="rates"><span>Legendario: 7%</span><span>Normal: 93%</span></div><div class="price">$1</div><a class="btn" onclick="addToCart('Gacha', 1)">Comprar</a></div>
-        <div class="gacha-card"><div class="gacha-title">Paldea</div><div class="rates"><span>Legendario: 7%</span><span>Normal: 93%</span></div><div class="price">$1</div><a class="btn" onclick="addToCart('Gacha', 1)">Comprar</a></div>
-        <div class="gacha-card"><div class="gacha-title">Alola</div><div class="rates"><span>Legendario: 7%</span><span>Normal: 93%</span></div><div class="price">$1</div><a class="btn" onclick="addToCart('Gacha', 1)">Comprar</a></div>
-        <div class="gacha-card"><div class="gacha-title">Kalos</div><div class="rates"><span>Legendario: 7%</span><span>Normal: 93%</span></div><div class="price">$1</div><a class="btn" onclick="addToCart('Gacha', 1)">Comprar</a></div>
-        <div class="gacha-card"><div class="gacha-title">Galar</div><div class="rates"><span>Legendario: 7%</span><span>Normal: 93%</span></div><div class="price">$1</div><a class="btn" onclick="addToCart('Gacha', 1)">Comprar</a></div>
-        <div class="gacha-card"><div class="gacha-title">Espadachines Paradox</div><div class="rates"><span>Legendario: 7%</span><span>Normal: 93%</span></div><div class="price">$1</div><a class="btn" onclick="addToCart('Gacha', 1)">Comprar</a></div>
-        <div class="gacha-card"><div class="gacha-title">Perros Paradox</div><div class="rates"><span>Legendario: 7%</span><span>Normal: 93%</span></div><div class="price">$1</div><a class="btn" onclick="addToCart('Gacha', 1)">Comprar</a></div>
-        <div class="gacha-card"><div class="gacha-title">Victini</div><div class="rates"><span>Legendario: 7%</span><span>Normal: 93%</span></div><div class="price">$1</div><a class="btn" onclick="addToCart('Gacha', 1)">Comprar</a></div>
-        <div class="gacha-card"><div class="gacha-title">Zarude</div><div class="rates"><span>Legendario: 7%</span><span>Normal: 93%</span></div><div class="price">$1</div><a class="btn" onclick="addToCart('Gacha', 1)">Comprar</a></div>
-        <div class="gacha-card"><div class="gacha-title">Darkrai</div><div class="rates"><span>Legendario: 7%</span><span>Normal: 93%</span></div><div class="price">$1</div><a class="btn" onclick="addToCart('Gacha', 1)">Comprar</a></div>
-        <div class="gacha-card"><div class="gacha-title">Hoopa</div><div class="rates"><span>Legendario: 7%</span><span>Normal: 93%</span></div><div class="price">$1</div><a class="btn" onclick="addToCart('Gacha', 1)">Comprar</a></div>
-        <div class="gacha-card"><div class="gacha-title">Pecharunt</div><div class="rates"><span>Legendario: 7%</span><span>Normal: 93%</span></div><div class="price">$1</div><a class="btn" onclick="addToCart('Gacha', 1)">Comprar</a></div>
+        <div class="gacha-card"><div class="gacha-title">Paradox 1</div><div class="rates"><span>Legendario: 7%</span><span>Normal: 93%</span></div><div class="price">$1</div><button class="btn" onclick="addToCart(this.closest('.gacha-card').querySelector('.gacha-title').textContent, 1)">Comprar</button></div>
+        <div class="gacha-card"><div class="gacha-title">Paradox 2</div><div class="rates"><span>Legendario: 7%</span><span>Normal: 93%</span></div><div class="price">$1</div><button class="btn" onclick="addToCart(this.closest('.gacha-card').querySelector('.gacha-title').textContent, 1)">Comprar</button></div>
+        <div class="gacha-card"><div class="gacha-title">Paradox 3</div><div class="rates"><span>Legendario: 7%</span><span>Normal: 93%</span></div><div class="price">$1</div><button class="btn" onclick="addToCart(this.closest('.gacha-card').querySelector('.gacha-title').textContent, 1)">Comprar</button></div>
+        <div class="gacha-card"><div class="gacha-title">Paldea</div><div class="rates"><span>Legendario: 7%</span><span>Normal: 93%</span></div><div class="price">$1</div><button class="btn" onclick="addToCart(this.closest('.gacha-card').querySelector('.gacha-title').textContent, 1)">Comprar</button></div>
+        <div class="gacha-card"><div class="gacha-title">Alola</div><div class="rates"><span>Legendario: 7%</span><span>Normal: 93%</span></div><div class="price">$1</div><button class="btn" onclick="addToCart(this.closest('.gacha-card').querySelector('.gacha-title').textContent, 1)">Comprar</button></div>
+        <div class="gacha-card"><div class="gacha-title">Kalos</div><div class="rates"><span>Legendario: 7%</span><span>Normal: 93%</span></div><div class="price">$1</div><button class="btn" onclick="addToCart(this.closest('.gacha-card').querySelector('.gacha-title').textContent, 1)">Comprar</button></div>
+        <div class="gacha-card"><div class="gacha-title">Galar</div><div class="rates"><span>Legendario: 7%</span><span>Normal: 93%</span></div><div class="price">$1</div><button class="btn" onclick="addToCart(this.closest('.gacha-card').querySelector('.gacha-title').textContent, 1)">Comprar</button></div>
+        <div class="gacha-card"><div class="gacha-title">Espadachines Paradox</div><div class="rates"><span>Legendario: 7%</span><span>Normal: 93%</span></div><div class="price">$1</div><button class="btn" onclick="addToCart(this.closest('.gacha-card').querySelector('.gacha-title').textContent, 1)">Comprar</button></div>
+        <div class="gacha-card"><div class="gacha-title">Perros Paradox</div><div class="rates"><span>Legendario: 7%</span><span>Normal: 93%</span></div><div class="price">$1</div><button class="btn" onclick="addToCart(this.closest('.gacha-card').querySelector('.gacha-title').textContent, 1)">Comprar</button></div>
+        <div class="gacha-card"><div class="gacha-title">Victini</div><div class="rates"><span>Legendario: 7%</span><span>Normal: 93%</span></div><div class="price">$1</div><button class="btn" onclick="addToCart(this.closest('.gacha-card').querySelector('.gacha-title').textContent, 1)">Comprar</button></div>
+        <div class="gacha-card"><div class="gacha-title">Zarude</div><div class="rates"><span>Legendario: 7%</span><span>Normal: 93%</span></div><div class="price">$1</div><button class="btn" onclick="addToCart(this.closest('.gacha-card').querySelector('.gacha-title').textContent, 1)">Comprar</button></div>
+        <div class="gacha-card"><div class="gacha-title">Darkrai</div><div class="rates"><span>Legendario: 7%</span><span>Normal: 93%</span></div><div class="price">$1</div><button class="btn" onclick="addToCart(this.closest('.gacha-card').querySelector('.gacha-title').textContent, 1)">Comprar</button></div>
+        <div class="gacha-card"><div class="gacha-title">Hoopa</div><div class="rates"><span>Legendario: 7%</span><span>Normal: 93%</span></div><div class="price">$1</div><button class="btn" onclick="addToCart(this.closest('.gacha-card').querySelector('.gacha-title').textContent, 1)">Comprar</button></div>
+        <div class="gacha-card"><div class="gacha-title">Pecharunt</div><div class="rates"><span>Legendario: 7%</span><span>Normal: 93%</span></div><div class="price">$1</div><button class="btn" onclick="addToCart(this.closest('.gacha-card').querySelector('.gacha-title').textContent, 1)">Comprar</button></div>
       </div>
 
       <!-- GACHAS DELUXE -->
@@ -323,17 +366,15 @@
       <p class="section-subtitle">Legendario garantizado · 12,5% cada gacha</p>
 
       <div class="grid">
-        <div class="gacha-card"><div class="gacha-title">Singulares Deluxe</div><div class="rates"><span>Legendario: 100%</span></div><div class="price">$5</div><a class="btn" onclick="addToCart('Gacha', 1)">Comprar</a></div>
-        <div class="gacha-card"><div class="gacha-title">Mewtwo Deluxe</div><div class="rates"><span>Legendario: 100%</span></div><div class="price">$5</div><a class="btn" onclick="addToCart('Gacha', 1)">Comprar</a></div>
-        <div class="gacha-card"><div class="gacha-title">Paradox 2 Deluxe</div><div class="rates"><span>Legendario: 100%</span></div><div class="price">$5</div><a class="btn" onclick="addToCart('Gacha', 1)">Comprar</a></div>
-        <div class="gacha-card"><div class="gacha-title">Necrozma Deluxe</div><div class="rates"><span>Legendario: 100%</span></div><div class="price">$5</div><a class="btn" onclick="addToCart('Gacha', 1)">Comprar</a></div>
-        <div class="gacha-card"><div class="gacha-title">Ultraente Deluxe</div><div class="rates"><span>Legendario: 100%</span></div><div class="price">$5</div><a class="btn" onclick="addToCart('Gacha', 1)">Comprar</a></div>
-        <div class="gacha-card"><div class="gacha-title">Paldea Deluxe</div><div class="rates"><span>Legendario: 100%</span></div><div class="price">$5</div><a class="btn" onclick="addToCart('Gacha', 1)">Comprar</a></div>
-        <div class="gacha-card"><div class="gacha-title">Galar Deluxe</div><div class="rates"><span>Legendario: 100%</span></div><div class="price">$5</div><a class="btn" onclick="addToCart('Gacha', 1)">Comprar</a></div>
-        <div class="gacha-card"><div class="gacha-title">Paradox 1 Deluxe</div><div class="rates"><span>Legendario: 100%</span></div><div class="price">$5</div><a class="btn" onclick="addToCart('Gacha', 1)">Comprar</a></div>
+        <div class="gacha-card"><div class="gacha-title">Singulares Deluxe</div><div class="rates"><span>Legendario: 100%</span></div><div class="price">$5</div><button class="btn" onclick="addToCart(this.closest('.gacha-card').querySelector('.gacha-title').textContent, 5)">Comprar</button></div>
+        <div class="gacha-card"><div class="gacha-title">Mewtwo Deluxe</div><div class="rates"><span>Legendario: 100%</span></div><div class="price">$5</div><button class="btn" onclick="addToCart(this.closest('.gacha-card').querySelector('.gacha-title').textContent, 5)">Comprar</button></div>
+        <div class="gacha-card"><div class="gacha-title">Paradox 2 Deluxe</div><div class="rates"><span>Legendario: 100%</span></div><div class="price">$5</div><button class="btn" onclick="addToCart(this.closest('.gacha-card').querySelector('.gacha-title').textContent, 5)">Comprar</button></div>
+        <div class="gacha-card"><div class="gacha-title">Necrozma Deluxe</div><div class="rates"><span>Legendario: 100%</span></div><div class="price">$5</div><button class="btn" onclick="addToCart(this.closest('.gacha-card').querySelector('.gacha-title').textContent, 5)">Comprar</button></div>
+        <div class="gacha-card"><div class="gacha-title">Ultraente Deluxe</div><div class="rates"><span>Legendario: 100%</span></div><div class="price">$5</div><button class="btn" onclick="addToCart(this.closest('.gacha-card').querySelector('.gacha-title').textContent, 5)">Comprar</button></div>
+        <div class="gacha-card"><div class="gacha-title">Paldea Deluxe</div><div class="rates"><span>Legendario: 100%</span></div><div class="price">$5</div><button class="btn" onclick="addToCart(this.closest('.gacha-card').querySelector('.gacha-title').textContent, 5)">Comprar</button></div>
+        <div class="gacha-card"><div class="gacha-title">Galar Deluxe</div><div class="rates"><span>Legendario: 100%</span></div><div class="price">$5</div><button class="btn" onclick="addToCart(this.closest('.gacha-card').querySelector('.gacha-title').textContent, 5)">Comprar</button></div>
+        <div class="gacha-card"><div class="gacha-title">Paradox 1 Deluxe</div><div class="rates"><span>Legendario: 100%</span></div><div class="price">$5</div><button class="btn" onclick="addToCart(this.closest('.gacha-card').querySelector('.gacha-title').textContent, 5)">Comprar</button></div>
       </div>
-    </div>
-  </section>
 
   <section id="vips">
   <div class="container">
@@ -377,7 +418,7 @@
             <span>Dracovish Mineral — 20%</span>
           </div>
           <div class="price">$5</div>
-          <a class="btn" href="https://www.paypal.com/paypalme/POKELAND/5" target="_blank">Comprar</a>
+          <button class="btn" onclick="addToCart(this.closest('.gacha-card').querySelector('.gacha-title').textContent, 5)">Comprar</button>
         </div>
 
         <div class="gacha-card">
@@ -390,7 +431,7 @@
             <span>Genesect Mutado — 20%</span>
           </div>
           <div class="price">$5</div>
-          <a class="btn" href="https://www.paypal.com/paypalme/POKELAND/5" target="_blank">Comprar</a>
+          <button class="btn" onclick="addToCart(this.closest('.gacha-card').querySelector('.gacha-title').textContent, 5)">Comprar</button>
         </div>
 
         <div class="gacha-card">
@@ -403,7 +444,7 @@
             <span>Tangrowth Spaghetti — 20%</span>
           </div>
           <div class="price">$5</div>
-          <a class="btn" href="https://www.paypal.com/paypalme/POKELAND/5" target="_blank">Comprar</a>
+          <button class="btn" onclick="addToCart(this.closest('.gacha-card').querySelector('.gacha-title').textContent, 5)">Comprar</button>
         </div>
 
         <div class="gacha-card">
@@ -416,7 +457,7 @@
             <span>Tinkaton Guerrero — 20%</span>
           </div>
           <div class="price">$5</div>
-          <a class="btn" href="https://www.paypal.com/paypalme/POKELAND/5" target="_blank">Comprar</a>
+          <button class="btn" onclick="addToCart(this.closest('.gacha-card').querySelector('.gacha-title').textContent, 5)">Comprar</button>
         </div>
 
         <div class="gacha-card">
@@ -429,7 +470,7 @@
             <span>Spiritomb Galaxia — 20%</span>
           </div>
           <div class="price">$5</div>
-          <a class="btn" href="https://www.paypal.com/paypalme/POKELAND/5" target="_blank">Comprar</a>
+          <button class="btn" onclick="addToCart(this.closest('.gacha-card').querySelector('.gacha-title').textContent, 5)">Comprar</button>
         </div>
 
       </div>
