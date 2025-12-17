@@ -1,0 +1,511 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>POKELAND | Tienda de Gachas</title>
+  <style>
+    :root {
+      /* Paleta basada en la imagen */
+      --purple-1: #4b3a63;
+      --purple-2: #2f243f;
+      --dark: #1e1b22;
+      --gold: #f2b233;
+      --orange: #f05a23;
+      --text: #f5f5f5;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: 'Segoe UI', Arial, sans-serif;
+      background:
+        linear-gradient(rgba(47,36,63,0.85), rgba(30,27,34,0.9)),
+        url('https://assets.pokemon.com/assets/cms2/img/pokedex/full/006_f3.png'),
+        url('https://assets.pokemon.com/assets/cms2/img/pokedex/full/383.png');
+      background-position: center left, center right;
+      background-repeat: no-repeat;
+      background-size: cover, 50%, 50%;
+      background-attachment: fixed;
+      color: var(--text);
+    }
+
+    a { text-decoration: none; color: inherit; }
+
+    .container {
+      max-width: 1200px;
+      margin: auto;
+      padding: 0 20px;
+    }
+
+    /* HEADER */
+    header {
+      background: var(--dark);
+      border-bottom: 3px solid var(--gold);
+      position: sticky;
+      top: 0;
+      z-index: 10;
+    }
+
+    .nav {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      height: 70px;
+    }
+
+    .logo {
+      font-size: 26px;
+      font-weight: 900;
+      color: var(--gold);
+      letter-spacing: 2px;
+    }
+
+    nav a {
+      margin-left: 20px;
+      font-weight: 600;
+      opacity: 0.9;
+    }
+
+    nav a:hover { color: var(--orange); }
+
+    .btn {
+      background: linear-gradient(135deg, var(--gold), var(--orange));
+      color: #1b1b1b;
+      padding: 10px 18px;
+      border-radius: 8px;
+      font-weight: 800;
+      transition: transform 0.15s ease;
+      cursor: pointer;
+      display: inline-block;
+      position: relative;
+      z-index: 5;
+    }
+
+    .btn:hover { transform: scale(1.05); }
+
+    /* HERO */
+    .hero {
+      padding: 110px 0 90px;
+      text-align: center;
+      background: radial-gradient(circle at top, var(--purple-1), transparent 60%);
+    }
+
+    .hero h1 {
+      font-size: 48px;
+      margin-bottom: 15px;
+    }
+
+    .hero p {
+      font-size: 18px;
+      opacity: 0.85;
+      margin-bottom: 30px;
+    }
+
+    /* SECTIONS */
+    section { padding: 70px 0; }
+
+    h2.section-title {
+      text-align: center;
+      font-size: 34px;
+      margin-bottom: 15px;
+    }
+
+    .section-subtitle {
+      text-align: center;
+      opacity: 0.7;
+      margin-bottom: 45px;
+    }
+
+    /* GACHAS */
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+      gap: 30px;
+    }
+
+    .gacha-card {
+      background: linear-gradient(180deg, var(--purple-1), var(--dark));
+      border-radius: 16px;
+      padding: 25px;
+      border: 2px solid transparent;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .gacha-card::before {
+      content: "";
+      position: absolute;
+      inset: 0;
+      border-radius: 16px;
+      padding: 2px;
+      background: linear-gradient(135deg, var(--gold), var(--orange));
+      -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+      -webkit-mask-composite: xor;
+      mask-composite: exclude;
+      pointer-events: none; /* PERMITE CLICKS EN BOTONES */
+    }
+
+    .gacha-title {
+      font-size: 24px;
+      font-weight: 900;
+      color: var(--gold);
+      margin-bottom: 10px;
+    }
+
+    .gacha-desc {
+      font-size: 15px;
+      opacity: 0.85;
+      margin-bottom: 20px;
+    }
+
+    .rates {
+      background: rgba(0,0,0,0.35);
+      border-radius: 10px;
+      padding: 15px;
+      margin-bottom: 20px;
+      font-size: 14px;
+    }
+
+    .rates span { display: block; margin-bottom: 6px; }
+
+    .price {
+      font-size: 26px;
+      font-weight: 900;
+      margin-bottom: 15px;
+    }
+
+    /* SKINS */
+    .skins {
+      background: linear-gradient(180deg, var(--dark), #141218);
+    }
+
+    .skin-card {
+      background: #141218;
+      border-radius: 14px;
+      padding: 20px;
+      text-align: center;
+      border: 1px solid rgba(255,255,255,0.08);
+    }
+
+    .skin-card h3 {
+      color: var(--orange);
+      margin-bottom: 10px;
+    }
+
+    .skin-card p {
+      font-size: 14px;
+      opacity: 0.8;
+    }
+
+    /* FOOTER */
+    footer {
+      background: #121015;
+      padding: 25px 0;
+      text-align: center;
+      font-size: 14px;
+      opacity: 0.7;
+      border-top: 2px solid var(--purple-1);
+    }
+  </style>
+  <script>
+  // --- CARRITO FUNCIONAL ---
+  let cart = JSON.parse(localStorage.getItem('pokeland_cart') || '{}');
+
+  function addToCart(name, price) {
+    if (!cart[name]) {
+      cart[name] = { name, price, qty: 1 };
+    } else {
+      cart[name].qty += 1;
+    }
+    renderCart();
+  }
+
+  function removeFromCart(name) {
+    if (!cart[name]) return;
+    cart[name].qty -= 1;
+    if (cart[name].qty <= 0) delete cart[name];
+    renderCart();
+  }
+
+  function renderCart() {
+    const cartList = document.getElementById('cart-items');
+    const totalEl = document.getElementById('cart-total');
+    cartList.innerHTML = '';
+    let total = 0;
+
+    Object.values(cart).forEach(item => {
+      const subtotal = item.price * item.qty;
+      total += subtotal;
+      const li = document.createElement('li');
+      li.style.marginBottom = '6px';
+      li.innerHTML = `${item.name} ×${item.qty} — $${subtotal.toFixed(2)} <button onclick="removeFromCart('${item.name}')" style="margin-left:6px;background:#a33;color:#fff;border:none;border-radius:4px;padding:2px 6px;cursor:pointer">✕</button>`;
+      cartList.appendChild(li);
+    });
+
+    totalEl.textContent = total.toFixed(2);
+    localStorage.setItem('pokeland_cart', JSON.stringify(cart));
+  }
+
+  function openCart() {
+    renderCart();
+    document.getElementById('cart-modal').style.display = 'flex';
+  }
+
+  function closeCart() {
+    document.getElementById('cart-modal').style.display = 'none';
+  }
+
+  function checkout() {
+    if (Object.keys(cart).length === 0) {
+      alert('El carrito está vacío');
+      return;
+    }
+
+    const notes = document.getElementById('cart-notes').value || 'Sin notas';
+    const description = encodeURIComponent(
+      Object.values(cart).map(i => `${i.name} x${i.qty}`).join(', ') + ' | Notas: ' + notes
+    );
+
+    const total = Object.values(cart).reduce((s, i) => s + i.price * i.qty, 0);
+
+    window.location.href = `https://www.paypal.com/paypalme/alequisde/` + total.toFixed(2);
+  }
+</script>
+</head>
+<body>
+
+  <!-- BOTÓN FLOTANTE CARRITO -->
+<div id="open-cart" onclick="openCart()" style="position:fixed;bottom:25px;right:25px;background:linear-gradient(135deg,#f2b233,#f05a23);color:#1b1b1b;padding:14px 20px;border-radius:999px;font-weight:900;cursor:pointer;z-index:999;box-shadow:0 10px 25px rgba(0,0,0,0.4)">
+  🛒 Ver carrito
+</div>
+
+<!-- MODAL CARRITO ESTILO STEAM -->
+<div id="cart-modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.75);z-index:1000;align-items:center;justify-content:center">
+  <div style="background:#141218;border:2px solid #f2b233;width:100%;max-width:700px;border-radius:16px;padding:30px;max-height:85vh;overflow-y:auto">
+    <h2 class="section-title" style="margin-bottom:10px">🛒 Carrito de Compras</h2>
+    <p class="section-subtitle">Revisa todo antes de pagar</p>
+
+    <p style="font-size:13px;opacity:0.85;margin-bottom:12px">Pagos enviados a PayPal:<br><b>alequisde@gmail.com</b></p>
+
+    <ul id="cart-items" style="font-size:15px;list-style:none;margin-bottom:20px"></ul>
+
+    <div style="font-size:20px;font-weight:900;margin-bottom:20px">Total: $<span id="cart-total">0.00</span></div>
+
+    <textarea id="cart-notes" placeholder="Nombre en Minecraft / Notas" style="width:100%;margin-bottom:20px;border-radius:8px;padding:12px"></textarea>
+
+    <div style="display:flex;gap:12px">
+      <button class="btn" style="flex:1" onclick="checkout()">Pagar con PayPal</button>
+      <button class="btn" style="flex:1;background:#333;color:#fff" onclick="closeCart()">Seguir comprando</button>
+    </div>
+  </div>
+</div>
+
+<header>
+    <div class="container nav">
+      <div class="logo">POKELAND</div>
+      <nav>
+        <a href="#gachas">Gachas</a>
+        <a href="#vips">VIPs</a>
+        <a href="#battlepass">Battle Pass</a>
+        <a href="#deluxe-skins">Deluxe Skins</a>
+        <a href="#gimnasios">Gimnasios</a>
+        <a href="#jugar">Jugar</a>
+      </nav>
+      <a href="https://discord.gg/6WxMVHat" class="btn" target="_blank">Discord</a>
+    </div>
+  </header>
+
+  <section class="hero">
+    <div class="container">
+      <h1>Tienda Oficial de Gachas</h1>
+      <p>Obtén Pokémon exclusivos, raros y con skins únicas en POKELAND</p>
+      <a href="#gachas" class="btn">Ver Gachas</a>
+    </div>
+  </section>
+
+  <section id="promociones">
+  <div class="container">
+    <h2 class="section-title">🎁 Promociones de Diciembre</h2>
+    <p class="section-subtitle">Disponibles solo por tiempo limitado</p>
+    <div class="grid">
+      <div class="gacha-card"><div class="gacha-title">VIP Diciembre</div><p>Por la compra de <b>2 VIP</b>, obtén el <b>tercero GRATIS</b>.</p></div>
+      <div class="gacha-card"><div class="gacha-title">Gacha Deluxe Diciembre</div><p>Por la compra de <b>2 Gachas Deluxe</b>, obtén el <b>tercero GRATIS</b>.</p></div>
+    </div>
+  </div>
+</section>
+
+<section id="gachas">
+    <div class="container">
+      <h2 class="section-title">Sistema de Gachas</h2>
+      <p class="section-subtitle">Sistema ordenado por categorías y probabilidades</p>
+
+      <!-- GACHAS NORMALES -->
+      <h3 class="section-title" style="font-size:26px;margin-top:40px">Gachas Normales – $1</h3>
+      <p class="section-subtitle">14 ranuras · 9% Pokémon normales · 7% Legendario</p>
+
+      <div class="grid">
+        <div class="gacha-card"><div class="gacha-title">Paradox 1</div><div class="rates"><span>Legendario: 7%</span><span>Normal: 93%</span></div><div class="price">$1</div><button class="btn" onclick="addToCart(this.closest('.gacha-card').querySelector('.gacha-title').textContent, 1)">Comprar</button></div>
+        <div class="gacha-card"><div class="gacha-title">Paradox 2</div><div class="rates"><span>Legendario: 7%</span><span>Normal: 93%</span></div><div class="price">$1</div><button class="btn" onclick="addToCart(this.closest('.gacha-card').querySelector('.gacha-title').textContent, 1)">Comprar</button></div>
+        <div class="gacha-card"><div class="gacha-title">Paradox 3</div><div class="rates"><span>Legendario: 7%</span><span>Normal: 93%</span></div><div class="price">$1</div><button class="btn" onclick="addToCart(this.closest('.gacha-card').querySelector('.gacha-title').textContent, 1)">Comprar</button></div>
+        <div class="gacha-card"><div class="gacha-title">Paldea</div><div class="rates"><span>Legendario: 7%</span><span>Normal: 93%</span></div><div class="price">$1</div><button class="btn" onclick="addToCart(this.closest('.gacha-card').querySelector('.gacha-title').textContent, 1)">Comprar</button></div>
+        <div class="gacha-card"><div class="gacha-title">Alola</div><div class="rates"><span>Legendario: 7%</span><span>Normal: 93%</span></div><div class="price">$1</div><button class="btn" onclick="addToCart(this.closest('.gacha-card').querySelector('.gacha-title').textContent, 1)">Comprar</button></div>
+        <div class="gacha-card"><div class="gacha-title">Kalos</div><div class="rates"><span>Legendario: 7%</span><span>Normal: 93%</span></div><div class="price">$1</div><button class="btn" onclick="addToCart(this.closest('.gacha-card').querySelector('.gacha-title').textContent, 1)">Comprar</button></div>
+        <div class="gacha-card"><div class="gacha-title">Galar</div><div class="rates"><span>Legendario: 7%</span><span>Normal: 93%</span></div><div class="price">$1</div><button class="btn" onclick="addToCart(this.closest('.gacha-card').querySelector('.gacha-title').textContent, 1)">Comprar</button></div>
+        <div class="gacha-card"><div class="gacha-title">Espadachines Paradox</div><div class="rates"><span>Legendario: 7%</span><span>Normal: 93%</span></div><div class="price">$1</div><button class="btn" onclick="addToCart(this.closest('.gacha-card').querySelector('.gacha-title').textContent, 1)">Comprar</button></div>
+        <div class="gacha-card"><div class="gacha-title">Perros Paradox</div><div class="rates"><span>Legendario: 7%</span><span>Normal: 93%</span></div><div class="price">$1</div><button class="btn" onclick="addToCart(this.closest('.gacha-card').querySelector('.gacha-title').textContent, 1)">Comprar</button></div>
+        <div class="gacha-card"><div class="gacha-title">Victini</div><div class="rates"><span>Legendario: 7%</span><span>Normal: 93%</span></div><div class="price">$1</div><button class="btn" onclick="addToCart(this.closest('.gacha-card').querySelector('.gacha-title').textContent, 1)">Comprar</button></div>
+        <div class="gacha-card"><div class="gacha-title">Zarude</div><div class="rates"><span>Legendario: 7%</span><span>Normal: 93%</span></div><div class="price">$1</div><button class="btn" onclick="addToCart(this.closest('.gacha-card').querySelector('.gacha-title').textContent, 1)">Comprar</button></div>
+        <div class="gacha-card"><div class="gacha-title">Darkrai</div><div class="rates"><span>Legendario: 7%</span><span>Normal: 93%</span></div><div class="price">$1</div><button class="btn" onclick="addToCart(this.closest('.gacha-card').querySelector('.gacha-title').textContent, 1)">Comprar</button></div>
+        <div class="gacha-card"><div class="gacha-title">Hoopa</div><div class="rates"><span>Legendario: 7%</span><span>Normal: 93%</span></div><div class="price">$1</div><button class="btn" onclick="addToCart(this.closest('.gacha-card').querySelector('.gacha-title').textContent, 1)">Comprar</button></div>
+        <div class="gacha-card"><div class="gacha-title">Pecharunt</div><div class="rates"><span>Legendario: 7%</span><span>Normal: 93%</span></div><div class="price">$1</div><button class="btn" onclick="addToCart(this.closest('.gacha-card').querySelector('.gacha-title').textContent, 1)">Comprar</button></div>
+      </div>
+
+      <!-- GACHAS DELUXE -->
+      <h3 class="section-title" style="font-size:26px;margin-top:80px">Gachas Deluxe – $5</h3>
+      <p class="section-subtitle">Legendario garantizado · 12,5% cada gacha</p>
+
+      <div class="grid">
+        <div class="gacha-card"><div class="gacha-title">Singulares Deluxe</div><div class="rates"><span>Legendario: 100%</span></div><div class="price">$5</div><button class="btn" onclick="addToCart(this.closest('.gacha-card').querySelector('.gacha-title').textContent, 5)">Comprar</button></div>
+        <div class="gacha-card"><div class="gacha-title">Mewtwo Deluxe</div><div class="rates"><span>Legendario: 100%</span></div><div class="price">$5</div><button class="btn" onclick="addToCart(this.closest('.gacha-card').querySelector('.gacha-title').textContent, 5)">Comprar</button></div>
+        <div class="gacha-card"><div class="gacha-title">Paradox 2 Deluxe</div><div class="rates"><span>Legendario: 100%</span></div><div class="price">$5</div><button class="btn" onclick="addToCart(this.closest('.gacha-card').querySelector('.gacha-title').textContent, 5)">Comprar</button></div>
+        <div class="gacha-card"><div class="gacha-title">Necrozma Deluxe</div><div class="rates"><span>Legendario: 100%</span></div><div class="price">$5</div><button class="btn" onclick="addToCart(this.closest('.gacha-card').querySelector('.gacha-title').textContent, 5)">Comprar</button></div>
+        <div class="gacha-card"><div class="gacha-title">Ultraente Deluxe</div><div class="rates"><span>Legendario: 100%</span></div><div class="price">$5</div><button class="btn" onclick="addToCart(this.closest('.gacha-card').querySelector('.gacha-title').textContent, 5)">Comprar</button></div>
+        <div class="gacha-card"><div class="gacha-title">Paldea Deluxe</div><div class="rates"><span>Legendario: 100%</span></div><div class="price">$5</div><button class="btn" onclick="addToCart(this.closest('.gacha-card').querySelector('.gacha-title').textContent, 5)">Comprar</button></div>
+        <div class="gacha-card"><div class="gacha-title">Galar Deluxe</div><div class="rates"><span>Legendario: 100%</span></div><div class="price">$5</div><button class="btn" onclick="addToCart(this.closest('.gacha-card').querySelector('.gacha-title').textContent, 5)">Comprar</button></div>
+        <div class="gacha-card"><div class="gacha-title">Paradox 1 Deluxe</div><div class="rates"><span>Legendario: 100%</span></div><div class="price">$5</div><button class="btn" onclick="addToCart(this.closest('.gacha-card').querySelector('.gacha-title').textContent, 5)">Comprar</button></div>
+      </div>
+
+  <section id="vips">
+  <div class="container">
+    <h2 class="section-title">⭐ VIPs</h2>
+    <p class="section-subtitle">Accesos especiales y ventajas exclusivas · $3 cada VIP</p>
+    <div class="grid">
+      <div class="gacha-card"><div class="gacha-title">VIP I</div><p class="gacha-desc">Beneficios básicos para comenzar tu aventura.</p><div class="price">$3</div><a class="btn" onclick="addToCart('VIP I', 3)">Comprar</a></div>
+      <div class="gacha-card"><div class="gacha-title">VIP II</div><p class="gacha-desc">Mejoras de experiencia y recompensas.</p><div class="price">$3</div><a class="btn" onclick="addToCart('VIP II', 3)">Comprar</a></div>
+      <div class="gacha-card"><div class="gacha-title">VIP III</div><p class="gacha-desc">Acceso a funciones avanzadas.</p><div class="price">$3</div><a class="btn" onclick="addToCart('VIP III', 3)">Comprar</a></div>
+      <div class="gacha-card"><div class="gacha-title">VIP IV</div><p class="gacha-desc">Ventajas competitivas adicionales.</p><div class="price">$3</div><a class="btn" onclick="addToCart('VIP IV', 3)">Comprar</a></div>
+      <div class="gacha-card"><div class="gacha-title">VIP V</div><p class="gacha-desc">Contenido premium exclusivo.</p><div class="price">$3</div><a class="btn" onclick="addToCart('VIP V', 3)">Comprar</a></div>
+      <div class="gacha-card"><div class="gacha-title">VIP VI</div><p class="gacha-desc">Rango máximo con todas las ventajas.</p><div class="price">$3</div><a class="btn" onclick="addToCart('VIP VI', 3)">Comprar</a></div>
+    </div>
+  </div>
+</section>
+
+<section id="battlepass">
+  <div class="container">
+    <h2 class="section-title">🎟️ Battle Pass</h2>
+    <p class="section-subtitle">Completa misiones y desbloquea recompensas exclusivas</p>
+    <div class="grid">
+      <div class="gacha-card"><div class="gacha-title">Battle Pass Temporada Actual</div><p class="gacha-desc">Misiones, recompensas, skins y beneficios únicos durante la temporada.</p><div class="price">$3</div><a class="btn" onclick="addToCart('Battle Pass', 3)">Comprar</a></div>
+    </div>
+  </div>
+</section>
+
+<section id="deluxe-skins" class="gachas">
+    <div class="container">
+      <h2 class="section-title">Gachas Deluxe Skins</h2>
+      <p class="section-subtitle">Formato idéntico a gachas normales · $5 · Probabilidades visibles</p>
+
+      <div class="grid">
+
+        <div class="gacha-card">
+          <div class="gacha-title">Gacha Deluxe Skin 1</div>
+          <div class="rates">
+            <span>Armarouge Megaman — 20%</span>
+            <span>Ceruledge Zero — 20%</span>
+            <span>Ender Charizard — 20%</span>
+            <span>Gardevoir Haxorus Form — 20%</span>
+            <span>Dracovish Mineral — 20%</span>
+          </div>
+          <div class="price">$5</div>
+          <button class="btn" onclick="addToCart(this.closest('.gacha-card').querySelector('.gacha-title').textContent, 5)">Comprar</button>
+        </div>
+
+        <div class="gacha-card">
+          <div class="gacha-title">Gacha Deluxe Skin 2</div>
+          <div class="rates">
+            <span>Golurk Fantasy — 20%</span>
+            <span>Azumarill DJ — 20%</span>
+            <span>Landorus Bestia — 20%</span>
+            <span>Jirachi Deseo Corrompido — 20%</span>
+            <span>Genesect Mutado — 20%</span>
+          </div>
+          <div class="price">$5</div>
+          <button class="btn" onclick="addToCart(this.closest('.gacha-card').querySelector('.gacha-title').textContent, 5)">Comprar</button>
+        </div>
+
+        <div class="gacha-card">
+          <div class="gacha-title">Gacha Deluxe Skin 3</div>
+          <div class="rates">
+            <span>Cinderace Mundial — 20%</span>
+            <span>Inteleon Estrella — 20%</span>
+            <span>Ludicolo Chef — 20%</span>
+            <span>Diggersby Pascua — 20%</span>
+            <span>Tangrowth Spaghetti — 20%</span>
+          </div>
+          <div class="price">$5</div>
+          <button class="btn" onclick="addToCart(this.closest('.gacha-card').querySelector('.gacha-title').textContent, 5)">Comprar</button>
+        </div>
+
+        <div class="gacha-card">
+          <div class="gacha-title">Gacha Deluxe Skin 4</div>
+          <div class="rates">
+            <span>DSSylveon Valentín — 20%</span>
+            <span>Dracovish Planta Carnívora — 20%</span>
+            <span>Machamp Minero — 20%</span>
+            <span>Lapras Caballería — 20%</span>
+            <span>Tinkaton Guerrero — 20%</span>
+          </div>
+          <div class="price">$5</div>
+          <button class="btn" onclick="addToCart(this.closest('.gacha-card').querySelector('.gacha-title').textContent, 5)">Comprar</button>
+        </div>
+
+        <div class="gacha-card">
+          <div class="gacha-title">Gacha Deluxe Skin 5</div>
+          <div class="rates">
+            <span>Incineroar Definitivo — 20%</span>
+            <span>Torterra Veraniego — 20%</span>
+            <span>Aegislash El Elegido — 20%</span>
+            <span>Magnezone Pilotado — 20%</span>
+            <span>Spiritomb Galaxia — 20%</span>
+          </div>
+          <div class="price">$5</div>
+          <button class="btn" onclick="addToCart(this.closest('.gacha-card').querySelector('.gacha-title').textContent, 5)">Comprar</button>
+        </div>
+
+      </div>
+    </div>
+  </section>
+
+  <section id="gimnasios">
+    <div class="container">
+      <h2 class="section-title">Gimnasios Oficiales</h2>
+      <p class="section-subtitle">Líderes profesionales que deberás vencer</p>
+
+      <div class="grid">
+        <div class="gacha-card"><div class="gacha-title">⚡ JasonXDDDDD</div><p>Líder Eléctrico<br>Especialista en combates rápidos y presión constante.</p></div>
+        <div class="gacha-card"><div class="gacha-title">⚪ Ketcnxhup</div><p>Líder Normal<br>Estrategia sólida y gran control defensivo.</p></div>
+        <div class="gacha-card"><div class="gacha-title">🐉 Yinstark</div><p>Líder Dragón<br>Alto poder ofensivo y presión extrema.</p></div>
+        <div class="gacha-card"><div class="gacha-title">✨ Macitakp</div><p>Líder Hada<br>Combates tácticos y control del ritmo.</p></div>
+        <div class="gacha-card"><div class="gacha-title">🌑 Alucianxxx</div><p>Líder Siniestro<br>Juego mental y castigo a errores.</p></div>
+        <div class="gacha-card"><div class="gacha-title">🌊 Yayo51</div><p>Líder Agua<br>Resistencia y desgaste progresivo.</p></div>
+      </div>
+    </div>
+  </section>
+
+  <section id="jugar">
+    <div class="container" style="text-align:center">
+      <h2 class="section-title">¿Listo para jugar?</h2>
+      <p class="section-subtitle">IP: pokeland.dat.gg · Puerto: 17011</p>
+      <a href="#" class="btn">Unirse ahora</a>
+    </div>
+  </section>
+
+  <footer>
+    <div class="container">
+      © 2025 POKELAND · Cobblemon Network · No afiliado a Nintendo
+    </div>
+  </footer>
+
+</body>
+</html>
